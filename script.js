@@ -19,6 +19,9 @@ const paddle = {
     width: 90,
     height: 12
 };
+
+// ゲームオーバー状態
+let isGameOver = false;
 // バーを操作する
 function movePaddle(event) {
 
@@ -75,11 +78,20 @@ for (let row = 0; row < brickRows; row++) {
 // ゲームの状態を更新する
 function update(delta) {
 
+    // ゲームオーバーなら更新しない
+    if (isGameOver) return;
+
     const seconds = delta / 1000;
 
     // ボールの位置を更新
     ball.x += ball.vx * seconds;
     ball.y += ball.vy * seconds;
+
+    // ボールが画面の下に落ちたか
+    if (ball.y - ball.radius > canvas.height) {
+        isGameOver = true;
+        return;
+    }
 
     // 左の壁
     if (ball.x - ball.radius < 0) {
@@ -179,6 +191,20 @@ for (const brick of bricks) {
         paddle.width,
         paddle.height
     );
+
+    // ゲームオーバー表示
+    if (isGameOver) {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "32px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillText(
+            "GAME OVER",
+            canvas.width / 2,
+            canvas.height / 2
+        );
+    }
 }
 
 // 前回の実行時刻
