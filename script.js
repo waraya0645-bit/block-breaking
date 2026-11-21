@@ -12,7 +12,7 @@ const ball = {
     y: 500,
     radius: 8,
 
-    vx: 0,
+    vx: 60,
     vy: -500
 };
 
@@ -66,7 +66,7 @@ function movePaddle(event) {
 function restart() {
     ball.x = 240;
     ball.y = 500;
-    ball.vx = 0;
+    ball.vx = 60;
     ball.vy = -500;
 
     // 敵を復活させてHPを最大に戻す
