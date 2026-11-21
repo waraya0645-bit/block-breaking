@@ -17,7 +17,7 @@ const ball = {
 
 // バー
 const paddle = {
-    x: 195,
+    x: 580,
     y: 580,
     width: 90,
     height: 12
@@ -223,7 +223,7 @@ function draw() {
 
     // ゲームオーバー表示
     if (isGameOver) {
-        ctx.fillStyle = "#c0c0c0";
+        ctx.fillStyle = "#000000";
         ctx.font = "32px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
