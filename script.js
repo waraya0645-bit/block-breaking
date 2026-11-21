@@ -19,6 +19,36 @@ const paddle = {
     width: 90,
     height: 12
 };
+// バーを操作する
+function movePaddle(event) {
+
+    // Canvasの表示位置と大きさを取得
+    const rect = canvas.getBoundingClientRect();
+
+    // 表示サイズとCanvas内部のサイズの比率
+    const scaleX = canvas.width / rect.width;
+
+    // ポインターの位置をCanvas内の座標に変換
+    const pointerX = (event.clientX - rect.left) * scaleX;
+
+    // バーの中心をポインターに合わせる
+    paddle.x = pointerX - paddle.width / 2;
+
+    // バーが画面外に出ないようにする
+    paddle.x = Math.max(
+        0,
+        Math.min(canvas.width - paddle.width, paddle.x)
+    );
+}
+
+// 指やマウスを押したとき
+canvas.addEventListener("pointerdown", (event) => {
+    canvas.setPointerCapture(event.pointerId);
+    movePaddle(event);
+});
+
+// 指やマウスを動かしたとき
+canvas.addEventListener("pointermove", movePaddle);
 
 // ブロック
 const bricks = [];
