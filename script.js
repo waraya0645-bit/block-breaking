@@ -187,7 +187,7 @@ function draw() {
         }
 
         // 敵のHPを表示
-        ctx.fillStyle = "#FFFFFF";
+        ctx.fillStyle = "#000000";
         ctx.font = "18px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
@@ -199,7 +199,7 @@ function draw() {
     }
 
     // ボールを描画
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = "#000000";
 
     ctx.beginPath();
     ctx.arc(
