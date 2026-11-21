@@ -48,6 +48,9 @@ function movePaddle(event) {
 canvas.addEventListener("pointerdown", (event) => {
     canvas.setPointerCapture(event.pointerId);
     movePaddle(event);
+    if (!isGameOver) {
+        GameOver = false;
+    }
 });
 
 // 指やマウスを動かしたとき
