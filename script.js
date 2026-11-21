@@ -6,7 +6,10 @@ const ctx = canvas.getContext("2d");
 const ball = {
     x: 240,
     y: 500,
-    radius: 8
+    radius: 8,
+
+    vx: 180,
+    vy: -180
 };
 
 // バー
@@ -38,7 +41,15 @@ for (let row = 0; row < brickRows; row++) {
     }
 }
 
+// ゲームの状態を更新する
+function update(delta) {
 
+    const seconds = delta / 1000;
+
+    // ボールの位置を更新
+    ball.x += ball.vx * seconds;
+    ball.y += ball.vy * seconds;
+}
 // ゲーム画面を描画する
 function draw() {
 
@@ -81,12 +92,27 @@ function draw() {
     );
 }
 
+// 前回の実行時刻
+let previousTime = 0;
 
 // ゲームループ
-function gameLoop() {
+function gameLoop(currentTime) {
+
+    // 前回からの経過時間
+    const delta = previousTime === 0
+        ? 0
+        : currentTime - previousTime;
+
+    previousTime = currentTime;
+
+    // ゲームの更新
+    update(delta);
+
+    // 画面の描画
     draw();
+
     requestAnimationFrame(gameLoop);
 }
 
 // ゲーム開始
-gameLoop();
+gameLoop(0);
