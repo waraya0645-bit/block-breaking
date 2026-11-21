@@ -1,6 +1,9 @@
 // Canvasを取得
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+// 敵の画像
+const enemyImage = new Image();
+enemyImage.src = "./images/dotpict_20261121_173152.png";
 
 // ボール
 const ball = {
@@ -67,23 +70,35 @@ canvas.addEventListener("pointerdown", (event) => {
 // 指やマウスを動かしたとき
 canvas.addEventListener("pointermove", movePaddle);
 
-// ブロック
-const bricks = [];
+// 敵
+const enemies = [];
 
-const brickRows = 4;
-const brickColumns = 7;
+const enemyRows = 4;
+const enemyColumns = 7;
 
-const brickWidth = 55;
-const brickHeight = 18;
-const brickGap = 8;
+const enemyWidth = 55;
+const enemyHeight = 27.5;
+const enemyGapX = 8;
+const enemyGapY = 12;
 
-for (let row = 0; row < brickRows; row++) {
-    for (let col = 0; col < brickColumns; col++) {
-        bricks.push({
-            x: 22 + col * (brickWidth + brickGap),
-            y: 70 + row * (brickHeight + brickGap),
-            width: brickWidth,
-            height: brickHeight,
+const startX = (
+    canvas.width -
+    (enemyColumns * enemyWidth + (enemyColumns - 1) * enemyGapX)
+) / 2;
+
+const startY = 80;
+
+for (let row = 0; row < enemyRows; row++) {
+    for (let col = 0; col < enemyColumns; col++) {
+        enemies.push({
+            x: startX + col * (enemyWidth + enemyGapX),
+            y: startY + row * (enemyHeight + enemyGapY),
+            width: enemyWidth,
+            height: enemyHeight,
+
+            hp: 3,
+            maxHp: 3,
+
             active: true
         });
     }
