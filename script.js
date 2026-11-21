@@ -1,6 +1,7 @@
 // Canvasを取得
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+
 // 敵の画像
 const enemyImage = new Image();
 enemyImage.src = "./images/dotpict_20261121_173152.png";
@@ -23,8 +24,22 @@ const paddle = {
     height: 12
 };
 
+// 敵
+const enemy = {
+    x: (canvas.width - 64) / 2,
+    y: (canvas.height - 32) / 2,
+    width: 64,
+    height: 32,
+
+    hp: 3,
+    maxHp: 3,
+
+    active: true
+};
+
 // ゲームオーバー状態
 let isGameOver = false;
+
 // バーを操作する
 function movePaddle(event) {
 
@@ -47,21 +62,25 @@ function movePaddle(event) {
     );
 }
 
+// リスタート
 function restart() {
     ball.x = 240;
     ball.y = 500;
     ball.vx = 180;
     ball.vy = -500;
-    for (const brick of bricks) {
-    brick.active = true;
-    }
+
+    // 敵を復活させてHPを最大に戻す
+    enemy.hp = enemy.maxHp;
+    enemy.active = true;
+
     isGameOver = false;
 }
+
 // 指やマウスを押したとき
 canvas.addEventListener("pointerdown", (event) => {
     canvas.setPointerCapture(event.pointerId);
     movePaddle(event);
-    
+
     if (isGameOver) {
         restart();
     }
@@ -69,40 +88,6 @@ canvas.addEventListener("pointerdown", (event) => {
 
 // 指やマウスを動かしたとき
 canvas.addEventListener("pointermove", movePaddle);
-
-// 敵
-const enemies = [];
-
-const enemyRows = 4;
-const enemyColumns = 7;
-
-const enemyWidth = 55;
-const enemyHeight = 27.5;
-const enemyGapX = 8;
-const enemyGapY = 12;
-
-const startX = (
-    canvas.width -
-    (enemyColumns * enemyWidth + (enemyColumns - 1) * enemyGapX)
-) / 2;
-
-const startY = 80;
-
-for (let row = 0; row < enemyRows; row++) {
-    for (let col = 0; col < enemyColumns; col++) {
-        enemies.push({
-            x: startX + col * (enemyWidth + enemyGapX),
-            y: startY + row * (enemyHeight + enemyGapY),
-            width: enemyWidth,
-            height: enemyHeight,
-
-            hp: 3,
-            maxHp: 3,
-
-            active: true
-        });
-    }
-}
 
 // ゲームの状態を更新する
 function update(delta) {
@@ -154,49 +139,65 @@ function update(delta) {
         // 上方向に跳ね返す
         ball.vy *= -1;
     }
-    // ブロックとの衝突判定
-for (const brick of bricks) {
 
-    if (!brick.active) continue;
-
-    // ボールとブロックが重なっているか
+    // 敵との衝突判定
     if (
-        ball.x + ball.radius > brick.x &&
-        ball.x - ball.radius < brick.x + brick.width &&
-        ball.y + ball.radius > brick.y &&
-        ball.y - ball.radius < brick.y + brick.height
+        enemy.active &&
+        ball.x + ball.radius > enemy.x &&
+        ball.x - ball.radius < enemy.x + enemy.width &&
+        ball.y + ball.radius > enemy.y &&
+        ball.y - ball.radius < enemy.y + enemy.height
     ) {
+        // 敵のHPを1減らす
+        enemy.hp -= 1;
 
-        // ブロックを消す
-        brick.active = false;
+        // ボールを敵の外に戻して跳ね返す
+        if (ball.vy < 0) {
+            ball.y = enemy.y + enemy.height + ball.radius;
+        } else {
+            ball.y = enemy.y - ball.radius;
+        }
 
-        // ボールを跳ね返す
         ball.vy *= -1;
 
-        // 1回の更新で複数のブロックに当たらないようにする
-        break;
+        // HPが0になったら敵を消す
+        if (enemy.hp <= 0) {
+            enemy.hp = 0;
+            enemy.active = false;
+        }
     }
 }
-}
+
 // ゲーム画面を描画する
 function draw() {
 
     // 画面を消去
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ブロックを描画
-ctx.fillStyle = "#E65D5D";
+    // 敵を描画
+    if (enemy.active) {
 
-for (const brick of bricks) {
-    if (!brick.active) continue;
+        if (enemyImage.complete && enemyImage.naturalWidth > 0) {
+            ctx.drawImage(
+                enemyImage,
+                enemy.x,
+                enemy.y,
+                enemy.width,
+                enemy.height
+            );
+        }
 
-    ctx.fillRect(
-        brick.x,
-        brick.y,
-        brick.width,
-        brick.height
-    );
-}
+        // 敵のHPを表示
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "18px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            "HP: " + enemy.hp,
+            canvas.width / 2,
+            enemy.y - 8
+        );
+    }
 
     // ボールを描画
     ctx.fillStyle = "#FFFFFF";
