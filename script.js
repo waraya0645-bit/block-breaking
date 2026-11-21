@@ -212,7 +212,7 @@ function draw() {
     ctx.fill();
 
     // バーを描画
-    ctx.fillStyle = "#5B9BE6";
+    ctx.fillStyle = "#000000";
 
     ctx.fillRect(
         paddle.x,
@@ -223,7 +223,7 @@ function draw() {
 
     // ゲームオーバー表示
     if (isGameOver) {
-        ctx.fillStyle = "#FFFFFF";
+        ctx.fillStyle = "#c0c0c0";
         ctx.font = "32px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
