@@ -8,7 +8,7 @@ const ball = {
     y: 500,
     radius: 8,
 
-    vx: 180,
+    vx: 80,
     vy: -180
 };
 
@@ -42,7 +42,6 @@ for (let row = 0; row < brickRows; row++) {
 }
 
 // ゲームの状態を更新する
-// ゲームの状態を更新する
 function update(delta) {
 
     const seconds = delta / 1000;
@@ -66,6 +65,21 @@ function update(delta) {
     // 上の壁
     if (ball.y - ball.radius < 0) {
         ball.y = ball.radius;
+        ball.vy *= -1;
+    }
+
+    // バーとの衝突判定
+    if (
+        ball.vy > 0 &&
+        ball.y + ball.radius >= paddle.y &&
+        ball.y - ball.radius < paddle.y &&
+        ball.x + ball.radius >= paddle.x &&
+        ball.x - ball.radius <= paddle.x + paddle.width
+    ) {
+        // ボールの位置をバーの上に戻す
+        ball.y = paddle.y - ball.radius;
+
+        // 上方向に跳ね返す
         ball.vy *= -1;
     }
 }
