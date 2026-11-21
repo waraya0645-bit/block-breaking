@@ -49,7 +49,7 @@ function restart() {
     ball.y = 500;
     ball.vx = 180;
     ball.vy = -500;
-    blick.active = true;
+    brick.active = true;
     isGameOver = false;
 }
 // 指やマウスを押したとき
