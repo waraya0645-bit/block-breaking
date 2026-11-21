@@ -8,8 +8,8 @@ const ball = {
     y: 500,
     radius: 8,
 
-    vx: 360,
-    vy: -1000
+    vx: 180,
+    vy: -500
 };
 
 // バー
@@ -44,12 +44,20 @@ function movePaddle(event) {
     );
 }
 
+function restart {
+    ball.x = 240;
+    ball.y = 500;
+    ball.vx = 180;
+    ball.vy = -500;
+    isGameOver = false;
+}
 // 指やマウスを押したとき
 canvas.addEventListener("pointerdown", (event) => {
     canvas.setPointerCapture(event.pointerId);
     movePaddle(event);
+    
     if (!isGameOver) {
-        isGameOver = false;
+        restart();
     }
 });
 
