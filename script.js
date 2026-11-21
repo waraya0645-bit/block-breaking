@@ -42,6 +42,7 @@ for (let row = 0; row < brickRows; row++) {
 }
 
 // ゲームの状態を更新する
+// ゲームの状態を更新する
 function update(delta) {
 
     const seconds = delta / 1000;
@@ -49,6 +50,24 @@ function update(delta) {
     // ボールの位置を更新
     ball.x += ball.vx * seconds;
     ball.y += ball.vy * seconds;
+
+    // 左の壁
+    if (ball.x - ball.radius < 0) {
+        ball.x = ball.radius;
+        ball.vx *= -1;
+    }
+
+    // 右の壁
+    if (ball.x + ball.radius > canvas.width) {
+        ball.x = canvas.width - ball.radius;
+        ball.vx *= -1;
+    }
+
+    // 上の壁
+    if (ball.y - ball.radius < 0) {
+        ball.y = ball.radius;
+        ball.vy *= -1;
+    }
 }
 // ゲーム画面を描画する
 function draw() {
