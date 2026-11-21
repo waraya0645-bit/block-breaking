@@ -8,8 +8,8 @@ const ball = {
     y: 500,
     radius: 8,
 
-    vx: 180,
-    vy: -500
+    vx: 360,
+    vy: -1000
 };
 
 // バー
