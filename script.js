@@ -44,7 +44,7 @@ function movePaddle(event) {
     );
 }
 
-function restart {
+function restart() {
     ball.x = 240;
     ball.y = 500;
     ball.vx = 180;
