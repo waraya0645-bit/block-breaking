@@ -11,7 +11,6 @@ const ball = {
     x: 240,
     y: 500,
     radius: 8,
-
     vx: 60,
     vy: -500
 };
