@@ -66,7 +66,8 @@ for (let row = 0; row < brickRows; row++) {
             x: 22 + col * (brickWidth + brickGap),
             y: 70 + row * (brickHeight + brickGap),
             width: brickWidth,
-            height: brickHeight
+            height: brickHeight,
+            active: true
         });
     }
 }
@@ -112,6 +113,29 @@ function update(delta) {
         // 上方向に跳ね返す
         ball.vy *= -1;
     }
+    // ブロックとの衝突判定
+for (const brick of bricks) {
+
+    if (!brick.active) continue;
+
+    // ボールとブロックが重なっているか
+    if (
+        ball.x + ball.radius > brick.x &&
+        ball.x - ball.radius < brick.x + brick.width &&
+        ball.y + ball.radius > brick.y &&
+        ball.y - ball.radius < brick.y + brick.height
+    ) {
+
+        // ブロックを消す
+        brick.active = false;
+
+        // ボールを跳ね返す
+        ball.vy *= -1;
+
+        // 1回の更新で複数のブロックに当たらないようにする
+        break;
+    }
+}
 }
 // ゲーム画面を描画する
 function draw() {
@@ -120,16 +144,18 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // ブロックを描画
-    ctx.fillStyle = "#E65D5D";
+ctx.fillStyle = "#E65D5D";
 
-    for (const brick of bricks) {
-        ctx.fillRect(
-            brick.x,
-            brick.y,
-            brick.width,
-            brick.height
-        );
-    }
+for (const brick of bricks) {
+    if (!brick.active) continue;
+
+    ctx.fillRect(
+        brick.x,
+        brick.y,
+        brick.width,
+        brick.height
+    );
+}
 
     // ボールを描画
     ctx.fillStyle = "#FFFFFF";
