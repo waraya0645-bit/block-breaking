@@ -56,7 +56,7 @@ canvas.addEventListener("pointerdown", (event) => {
     canvas.setPointerCapture(event.pointerId);
     movePaddle(event);
     
-    if (!isGameOver) {
+    if (isGameOver) {
         restart();
     }
 });
