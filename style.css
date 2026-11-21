@@ -17,7 +17,7 @@ body {
     width: min(92vw, 480px);
     height: auto;
 
-    background: #111827;
+    background: #ffffff;
     border: 2px solid white;
 
     touch-action: none;
