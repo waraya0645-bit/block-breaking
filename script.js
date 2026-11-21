@@ -49,7 +49,9 @@ function restart() {
     ball.y = 500;
     ball.vx = 180;
     ball.vy = -500;
+    for (const brick of bricks) {
     brick.active = true;
+    }
     isGameOver = false;
 }
 // 指やマウスを押したとき
