@@ -24,6 +24,9 @@ const paddle = {
 // pointerIdをキーにして、最大2本まで管理する
 const activePointers = new Map();
 
+// 前回のフレームでのバーの状態
+let previousPaddle = null;
+
 // 敵
 const enemy = {
     x: (canvas.width - 64) / 2,
@@ -50,6 +53,21 @@ function getCanvasPosition(event) {
     };
 }
 
+// 現在の2本指バーの状態を取得する
+function getPaddleState() {
+    if (activePointers.size !== 2) return null;
+
+    const entries = Array.from(activePointers.entries());
+
+    return {
+        ids: [entries[0][0], entries[1][0]],
+        points: [
+            { x: entries[0][1].x, y: entries[0][1].y },
+            { x: entries[1][1].x, y: entries[1][1].y }
+        ]
+    };
+}
+
 // 指を置いたとき
 canvas.addEventListener("pointerdown", (event) => {
     // 画面をタップしたらリスタート
@@ -66,6 +84,11 @@ canvas.addEventListener("pointerdown", (event) => {
         event.pointerId,
         getCanvasPosition(event)
     );
+
+    // 2本そろった瞬間の位置を、移動開始位置として保存する
+    if (activePointers.size === 2) {
+        previousPaddle = getPaddleState();
+    }
 });
 
 // 指を動かしたとき
@@ -82,6 +105,9 @@ canvas.addEventListener("pointermove", (event) => {
 // 指を離したとき
 function removePointer(event) {
     activePointers.delete(event.pointerId);
+
+    // 2本指でなくなったら前回位置を破棄する
+    previousPaddle = null;
 }
 
 canvas.addEventListener("pointerup", removePointer);
@@ -113,7 +139,6 @@ function collideBallWithPaddle(ball, A, B, paddleThickness) {
 
     // バーの長さが0なら処理しない
     if (lengthSquared === 0) return;
-
 
     // ② ボールの中心からバーの始点へのベクトル
     const acX = ball.x - A.x;
@@ -185,45 +210,114 @@ function update(delta) {
 
     const seconds = delta / 1000;
 
-    // ボールの位置を更新
-    ball.x += ball.vx * seconds;
-    ball.y += ball.vy * seconds;
+    // 現在のバーと、前回のバーの位置を取得
+    const currentPaddle = getPaddleState();
 
-    // ボールが画面の下に落ちたか
-    if (ball.y - ball.radius > canvas.height) {
-        isGameOver = true;
-        return;
+    // 途中で指の組み合わせが変わっていたら、
+    // 現在位置を移動開始位置として扱う
+    let startPaddle = previousPaddle;
+
+    if (
+        !currentPaddle ||
+        !startPaddle ||
+        currentPaddle.ids[0] !== startPaddle.ids[0] ||
+        currentPaddle.ids[1] !== startPaddle.ids[1]
+    ) {
+        startPaddle = currentPaddle;
     }
 
-    // 左の壁
-    if (ball.x - ball.radius < 0) {
-        ball.x = ball.radius;
-        ball.vx *= -1;
+    // 1フレーム中のボールの移動距離
+    const ballTravel = Math.hypot(ball.vx, ball.vy) * seconds;
+
+    // 1フレーム中のバーの最大移動距離
+    let paddleTravel = 0;
+
+    if (currentPaddle && startPaddle) {
+        for (let i = 0; i < 2; i++) {
+            const dx =
+                currentPaddle.points[i].x - startPaddle.points[i].x;
+            const dy =
+                currentPaddle.points[i].y - startPaddle.points[i].y;
+
+            paddleTravel = Math.max(
+                paddleTravel,
+                Math.hypot(dx, dy)
+            );
+        }
     }
 
-    // 右の壁
-    if (ball.x + ball.radius > canvas.width) {
-        ball.x = canvas.width - ball.radius;
-        ball.vx *= -1;
+    // ボールとバーの相対移動を細かく分割する
+    // 1ステップあたりの移動を約4ピクセル以内にする
+    const maxStepDistance = 4;
+    const steps = Math.max(
+        1,
+        Math.ceil((ballTravel + paddleTravel) / maxStepDistance)
+    );
+
+    const stepSeconds = seconds / steps;
+
+    // 1フレームを細かく分けて更新する
+    for (let i = 1; i <= steps; i++) {
+
+        // ボールを少しだけ移動
+        ball.x += ball.vx * stepSeconds;
+        ball.y += ball.vy * stepSeconds;
+
+        // 左の壁
+        if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius;
+            ball.vx *= -1;
+        }
+
+        // 右の壁
+        if (ball.x + ball.radius > canvas.width) {
+            ball.x = canvas.width - ball.radius;
+            ball.vx *= -1;
+        }
+
+        // 上の壁
+        if (ball.y - ball.radius < 0) {
+            ball.y = ball.radius;
+            ball.vy *= -1;
+        }
+
+        // このステップ時点でのバーの位置を補間する
+        if (currentPaddle && startPaddle) {
+            const progress = i / steps;
+
+            const A = {
+                x: startPaddle.points[0].x +
+                    (currentPaddle.points[0].x - startPaddle.points[0].x) * progress,
+                y: startPaddle.points[0].y +
+                    (currentPaddle.points[0].y - startPaddle.points[0].y) * progress
+            };
+
+            const B = {
+                x: startPaddle.points[1].x +
+                    (currentPaddle.points[1].x - startPaddle.points[1].x) * progress,
+                y: startPaddle.points[1].y +
+                    (currentPaddle.points[1].y - startPaddle.points[1].y) * progress
+            };
+
+            // 各ステップでバーとの衝突を確認する
+            collideBallWithPaddle(
+                ball,
+                A,
+                B,
+                paddle.thickness
+            );
+        }
+
+        // ボールが画面の下に落ちたか
+        if (ball.y - ball.radius > canvas.height) {
+            isGameOver = true;
+            previousPaddle = currentPaddle;
+            return;
+        }
     }
 
-    // 上の壁
-    if (ball.y - ball.radius < 0) {
-        ball.y = ball.radius;
-        ball.vy *= -1;
-    }
-
-    // 2本の指が置かれている場合だけバーとの衝突判定を行う
-    if (activePointers.size === 2) {
-        const points = Array.from(activePointers.values());
-
-        collideBallWithPaddle(
-            ball,
-            points[0],
-            points[1],
-            paddle.thickness
-        );
-    }
+    // 今回のバーの位置を次フレーム用に保存
+    previousPaddle = currentPaddle;
 
     // 敵との衝突判定
     if (
