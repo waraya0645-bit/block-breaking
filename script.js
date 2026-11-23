@@ -15,13 +15,14 @@ const ball = {
     vy: -500
 };
 
-// バー
+// 2本指バー
 const paddle = {
-    x: 580,
-    y: 580,
-    width: 90,
-    height: 12
+    thickness: 12
 };
+
+// 押されている指の位置を保存する
+// pointerIdをキーにして、最大2本まで管理する
+const activePointers = new Map();
 
 // 敵
 const enemy = {
@@ -39,27 +40,53 @@ const enemy = {
 // ゲームオーバー状態
 let isGameOver = false;
 
-// バーを操作する
-function movePaddle(event) {
-
-    // Canvasの表示位置と大きさを取得
+// ポインターの画面座標をCanvas内部の座標に変換する
+function getCanvasPosition(event) {
     const rect = canvas.getBoundingClientRect();
 
-    // 表示サイズとCanvas内部のサイズの比率
-    const scaleX = canvas.width / rect.width;
-
-    // ポインターの位置をCanvas内の座標に変換
-    const pointerX = (event.clientX - rect.left) * scaleX;
-
-    // バーの中心をポインターに合わせる
-    paddle.x = pointerX - paddle.width / 2;
-
-    // バーが画面外に出ないようにする
-    paddle.x = Math.max(
-        0,
-        Math.min(canvas.width - paddle.width, paddle.x)
-    );
+    return {
+        x: (event.clientX - rect.left) * (canvas.width / rect.width),
+        y: (event.clientY - rect.top) * (canvas.height / rect.height)
+    };
 }
+
+// 指を置いたとき
+canvas.addEventListener("pointerdown", (event) => {
+    // 画面をタップしたらリスタート
+    if (isGameOver) {
+        restart();
+    }
+
+    // すでに2本の指を管理している場合は追加しない
+    if (activePointers.size >= 2) return;
+
+    canvas.setPointerCapture(event.pointerId);
+
+    activePointers.set(
+        event.pointerId,
+        getCanvasPosition(event)
+    );
+});
+
+// 指を動かしたとき
+canvas.addEventListener("pointermove", (event) => {
+    // 管理している指だけ位置を更新する
+    if (!activePointers.has(event.pointerId)) return;
+
+    activePointers.set(
+        event.pointerId,
+        getCanvasPosition(event)
+    );
+});
+
+// 指を離したとき
+function removePointer(event) {
+    activePointers.delete(event.pointerId);
+}
+
+canvas.addEventListener("pointerup", removePointer);
+canvas.addEventListener("pointercancel", removePointer);
+canvas.addEventListener("lostpointercapture", removePointer);
 
 // リスタート
 function restart() {
@@ -75,18 +102,80 @@ function restart() {
     isGameOver = false;
 }
 
-// 指やマウスを押したとき
-canvas.addEventListener("pointerdown", (event) => {
-    canvas.setPointerCapture(event.pointerId);
-    movePaddle(event);
+// ボールと2本指バーの衝突処理
+function collideBallWithPaddle(ball, A, B, paddleThickness) {
 
-    if (isGameOver) {
-        restart();
+    // ① バーの方向ベクトル
+    const abX = B.x - A.x;
+    const abY = B.y - A.y;
+
+    const lengthSquared = abX * abX + abY * abY;
+
+    // バーの長さが0なら処理しない
+    if (lengthSquared === 0) return;
+
+
+    // ② ボールの中心からバーの始点へのベクトル
+    const acX = ball.x - A.x;
+    const acY = ball.y - A.y;
+
+    // ③ 内積から最近点の位置を求める
+    const dot = acX * abX + acY * abY;
+
+    const t = Math.max(0, Math.min(1, dot / lengthSquared));
+
+    // ④ バー上の最近点
+    const closestX = A.x + t * abX;
+    const closestY = A.y + t * abY;
+
+    // ⑤ 最近点からボールの中心へのベクトル
+    const dx = ball.x - closestX;
+    const dy = ball.y - closestY;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // ⑥ 接触しているか判定
+    const requiredDistance = ball.radius + paddleThickness / 2;
+
+    if (distance > requiredDistance) return;
+
+    // ⑦ 単位法線ベクトル
+    let nx;
+    let ny;
+
+    if (distance > 0) {
+        nx = dx / distance;
+        ny = dy / distance;
+    } else {
+        // 距離が0なら、バーに垂直な方向を使う
+        const length = Math.sqrt(lengthSquared);
+        nx = -abY / length;
+        ny = abX / length;
+
+        // 法線がボールの進行方向を向いていたら反転する
+        const directionDot = ball.vx * nx + ball.vy * ny;
+
+        if (directionDot > 0) {
+            nx = -nx;
+            ny = -ny;
+        }
     }
-});
 
-// 指やマウスを動かしたとき
-canvas.addEventListener("pointermove", movePaddle);
+    // ⑧ めり込みを解消する
+    const pushDistance = requiredDistance - distance;
+
+    ball.x += nx * pushDistance;
+    ball.y += ny * pushDistance;
+
+    // ⑨ 速度と法線の内積
+    const velocityDot = ball.vx * nx + ball.vy * ny;
+
+    // ⑩ バーに向かっている場合だけ反射する
+    if (velocityDot < 0) {
+        ball.vx -= 2 * velocityDot * nx;
+        ball.vy -= 2 * velocityDot * ny;
+    }
+}
 
 // ゲームの状態を更新する
 function update(delta) {
@@ -124,19 +213,16 @@ function update(delta) {
         ball.vy *= -1;
     }
 
-    // バーとの衝突判定
-    if (
-        ball.vy > 0 &&
-        ball.y + ball.radius >= paddle.y &&
-        ball.y - ball.radius < paddle.y &&
-        ball.x + ball.radius >= paddle.x &&
-        ball.x - ball.radius <= paddle.x + paddle.width
-    ) {
-        // ボールの位置をバーの上に戻す
-        ball.y = paddle.y - ball.radius;
+    // 2本の指が置かれている場合だけバーとの衝突判定を行う
+    if (activePointers.size === 2) {
+        const points = Array.from(activePointers.values());
 
-        // 上方向に跳ね返す
-        ball.vy *= -1;
+        collideBallWithPaddle(
+            ball,
+            points[0],
+            points[1],
+            paddle.thickness
+        );
     }
 
     // 敵との衝突判定
@@ -211,15 +297,19 @@ function draw() {
     );
     ctx.fill();
 
-    // バーを描画
-    ctx.fillStyle = "#000000";
+    // 2本の指を結ぶバーを描画
+    if (activePointers.size === 2) {
+        const points = Array.from(activePointers.values());
 
-    ctx.fillRect(
-        paddle.x,
-        paddle.y,
-        paddle.width,
-        paddle.height
-    );
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = paddle.thickness;
+        ctx.lineCap = "round";
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.stroke();
+    }
 
     // ゲームオーバー表示
     if (isGameOver) {
